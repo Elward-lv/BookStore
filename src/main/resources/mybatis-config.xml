@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE configuration
+        PUBLIC "-//mybatis.org//DTD Config 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-config.dtd">
+<configuration>
+<!--    需要按照顺序写 各个标签-->
+
+    <settings>
+    <!--<setting name="autoMappingBehavior" value="FULL"/>
+    <setting name="cacheEnabled" value="true"/>-->
+        <setting name="logImpl" value="STDOUT_LOGGING"/>
+    </settings>
+
+<!--    setting-->
+<typeAliases>
+    <package name="domain"/>
+</typeAliases>
+
+</configuration>

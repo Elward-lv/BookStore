@@ -1,0 +1,100 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="dao.UserMapper">
+    <select id="getUserIdByName" resultType="Integer">
+        select id from user
+        <where>
+            <if test="userName != null">
+                userName = #{userName}
+            </if>
+        </where>
+    </select>
+<!--    获取用户的角色名称-->
+    <select id="getRoleName" resultType="String">
+        select roleName from user u
+        left join role r on u.userRole = r.id
+        <where>
+            <if test="userName != null">
+                userName = #{userName}
+            </if>
+        </where>
+    </select>
+
+    <select id="countUserByEquals" resultType="Integer">
+        select COUNT(*) from user
+        <where>
+            1 = 1
+            <if test="conditions != null">
+                <foreach collection="conditions" index="key" item="value">
+                    <if test="key != null and value != null">
+                        and ${key} = #{value}
+                    </if>
+                </foreach>
+            </if>
+        </where>
+    </select>
+
+    <select id="queryUserByCondition" resultType="domain.User">
+        select user.id,userName,gender,birthday,email,userRole,roleName,address,user.createDate from user
+        left join role on user.userRole = role.id
+        <where>
+            <foreach collection="conditions" index="key" item="value">
+                <if test="key != null and value != null">
+                    and ${key} like CONCAT('%',#{value},'%')
+                </if>
+            </foreach>
+        </where>
+        limit #{start},#{size}
+    </select>
+
+    <select id="getUserByName" resultType="domain.User" parameterType="String">
+        select u.userName, u.password, r.roleName
+        from user u left join role r on u.userRole = r.id
+        where userName = #{userName}
+    </select>
+
+<!--和上边查询条件对应-->
+    <select id="countUserByCondition" resultType="Integer">
+        select COUNT(*) from user
+        left join role on user.userRole = role.id
+        <where>
+            1 = 1
+            <if test="conditions != null">
+                <foreach collection="conditions" index="key" item="value">
+                    <if test="key != null and value != null">
+                        and ${key} like CONCAT('%',#{value},'%')
+                    </if>
+                </foreach>
+            </if>
+        </where>
+    </select>
+
+    <insert id="addUser" parameterType="domain.User">
+        insert into user(userName,password,gender,birthday,email,userRole,address,createDate)
+        values (#{userName},#{password},#{gender},#{birthday},#{email},#{userRole},#{address},#{createDate})
+    </insert>
+
+    <delete id="deleteUser" parameterType="Integer">
+        delete from user  where id = #{id}
+    </delete>
+
+<!--    包含更新权限的操作,字段必须含有-->
+    <update id="updateUser" parameterType="domain.User">
+        update user set
+                userName = #{userName} ,
+                password = #{password} ,
+                gender = #{gender} ,
+                birthday = #{birthday} ,
+                email = #{email} ,
+                userRole = #{userRole},
+                address = #{address}
+        where id = #{id}
+    </update>
+
+<!--    查询permission 的信息-->
+    <select id="queryPermission" resultType="domain.Permission">
+        select url,permi from permission
+    </select>
+</mapper>

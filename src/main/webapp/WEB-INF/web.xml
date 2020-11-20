@@ -1,0 +1,80 @@
+<!DOCTYPE web-app PUBLIC
+ "-//Sun Microsystems, Inc.//DTD Web Application 2.3//EN"
+ "http://java.sun.com/dtd/web-app_2_3.dtd" >
+
+<web-app>
+  <display-name>Archetype Created Web Application</display-name>
+  <context-param>
+    <param-name>contextConfigLocation</param-name>
+    <param-value>classpath:application.xml</param-value>
+  </context-param>
+  <!--  shiro配置-->
+  <!-- ==================================================================
+         Filters
+         ================================================================== -->
+  <!-- Shiro Filter is defined in the spring application context: -->
+  <filter>
+    <filter-name>shiroFilter</filter-name>
+    <filter-class>org.springframework.web.filter.DelegatingFilterProxy</filter-class>
+    <init-param>
+      <param-name>targetFilterLifecycle</param-name>
+      <param-value>true</param-value>
+    </init-param>
+    <init-param>
+      <param-name>targetBeanName</param-name>s
+      <param-value>shiroFilterFactoryBean</param-value>
+    </init-param>
+  </filter>
+
+  <filter-mapping>
+    <filter-name>shiroFilter</filter-name>
+    <url-pattern>/*</url-pattern>
+  </filter-mapping>
+  <!--  shiro配置结束-->
+
+  <listener>
+    <listener-class>org.springframework.web.context.ContextLoaderListener</listener-class>
+<!--    默认会搜索WEB-INF/applicationContext.xml文件-->
+  </listener>
+
+  <servlet>
+    <servlet-name>DispatcherServlet</servlet-name>
+    <servlet-class>org.springframework.web.servlet.DispatcherServlet</servlet-class>
+    <init-param>
+      <param-name>contextConfigLocation</param-name>
+      <param-value>classpath:application.xml</param-value>
+    </init-param>
+    <load-on-startup>1</load-on-startup>
+  </servlet>
+<!--log4j配置文件加载,以及日志文件路径：path+log-->
+  <servlet>
+    <servlet-name>initSerclet</servlet-name>
+    <servlet-class>config.servlet.InitServlet</servlet-class>
+    <init-param>
+      <param-name>log4j</param-name>
+      <param-value>/WEB-INF/classes/log4j.properties</param-value>
+    </init-param>
+    <init-param>
+      <param-name>path</param-name>
+      <param-value>/WEB-INF/</param-value>
+    </init-param>
+    <init-param>
+      <param-name>log</param-name>
+      <param-value>log\log.log</param-value>
+    </init-param>
+    <load-on-startup>0</load-on-startup>
+  </servlet>
+
+  <servlet-mapping>
+    <servlet-name>DispatcherServlet</servlet-name>
+    <!--    配置不拦截静态资源 *.do  或者/*-->
+    <url-pattern>*.do</url-pattern>
+  </servlet-mapping>
+
+  <servlet-mapping>
+    <servlet-name>initSerclet</servlet-name>
+    <url-pattern>/context</url-pattern>
+  </servlet-mapping>
+
+
+</web-app>

@@ -1,0 +1,106 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="dao.BookMapper">
+<!--    首页的分类查询-->
+    <select id="queryByKind" resultMap="bookForImg">
+        select b.id id, b.bookCode bookCode ,b.bookName bookName ,b.bookImg bookImg, b.bookPrice bookPrice, b.bookNums bookNums, b.bookInfo bookInfo, b.bookAuthor bookAuthor,
+        b.modifyDate modifyDate, b.bookUser bookUser
+        from book b left join bookkind bk on b.id = bk.bookId
+                    left join kind k on bk.kindId = k.id
+        <where>
+            <if test="kind != null">
+                k.bookKind = #{kind}
+            </if>
+        </where>
+        limit 0,#{size}
+    </select>
+
+<!--    可能需要一个查询一本图书所有分类的条件查询-->
+    <select id="queryKindsById" resultType="String">
+        select bookKind from kind k
+        left join bookkind bk on k.id = bk.kindId
+        where bk.bookId = #{id}
+    </select>
+    
+<!--书籍的条件查询-->
+    <resultMap id="bookForImg" type="domain.Book">
+        <id property="id" column="id"/>
+        <result property="bookCode" column="bookCode"/>
+        <result property="bookName" column="bookName"/>
+        <result property="bookImg" column="bookImg"/>
+<!--        typeHandler="handler.BlobToByteArrTypeHandler"-->
+        <result property="bookPrice" column="bookPrice"/>
+        <result property="bookNums" column="bookNums"/>
+        <result property="bookInfo" column="bookInfo"/>
+        <result property="bookAuthor" column="bookAuthor"/>
+        <result property="modifyDate" column="modifyDate"/>
+        <result property="bookUser" column="bookUser"/>
+        <result property="saledNum" column="saledNum" />
+    </resultMap>
+    <select id="queryBookByCondition"  resultMap="bookForImg">
+        select b.id id, b.bookCode bookCode ,b.bookName bookName ,b.bookImg bookImg, b.bookPrice bookPrice, b.bookNums bookNums, b.bookInfo bookInfo, b.bookAuthor bookAuthor,
+        b.modifyDate modifyDate, b.bookUser bookUser
+         from book b left join user u on b.bookUser = u.id
+        <where>
+            1 = 1
+            <if test="conditions != null">
+                <foreach collection="conditions" index="key" item="value">
+                    <if test="key != null and value != null">
+                        and b.${key} like CONCAT('%',#{value},'%')
+                    </if>
+                </foreach>
+            </if>
+        </where>
+        limit #{start},#{size}
+    </select>
+
+    <select id="getPricesById" parameterType="Integer">
+        select bookPrice from book where id = #{id}
+    </select>
+
+
+    <select id="getPricesAndNums" resultType="domain.Book">
+        select id , bookPrice , bookNums from book
+    </select>
+
+    <insert id="addBook" parameterType="domain.Book">
+        insert into book(bookCode,bookName,bookImg,bookPrice,bookNums,bookInfo,bookAuthor,modifyDate,bookUser)
+        values (#{bookCode},#{bookName},#{bookImg},#{bookPrice},#{bookNums},#{bookInfo},#{bookAuthor},#{modifyDate},#{bookUser})
+    </insert>
+
+    <update id="updateBook" parameterType="domain.Book">
+        update book
+        <trim prefix="set" suffixOverrides="," suffix=" where id = #{id}">
+            <if test="bookCode != null">bookCode = #{bookCode} ,</if>
+            <if test="bookName != null">bookName = #{bookName} ,</if>
+            <if test="bookImg != null">bookImg = #{bookImg} ,</if>
+            <if test="bookPrice != null and bookPrice != 0">bookPrice = #{bookPrice} ,</if>
+            <if test="bookNums != null and bookNums != 0">bookNums = #{bookNums} ,</if>
+            <if test="bookInfo != null">bookInfo = #{bookInfo} ,</if>
+            <if test="bookAuthor != null">bookAuthor = #{bookAuthor} ,</if>
+            <if test="modifyDate != null">modifyDate = #{modifyDate} ,</if>
+            <if test="bookUser > 0">bookUser = #{bookUser} ,</if>
+        </trim>
+    </update>
+
+    <select id="queryTopList" resultMap="bookForImg">
+        select * from book
+        order by saledNum desc
+        limit 0,#{size}
+    </select>
+
+<!--    通过id减少图书的数量以及增加销量-->
+    <update id="descBookNumById">
+        update book
+        set bookNums = bookNums - #{num},
+            saledNum = saledNum + #{num}
+        where id = #{id}
+    </update>
+
+    <delete id="delete" parameterType="Integer">
+        delete from book where id =   #{id}
+    </delete>
+
+</mapper>

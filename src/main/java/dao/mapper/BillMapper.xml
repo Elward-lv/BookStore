@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="dao.BillMapper">
+    <resultMap id="billMap" type="domain.Bill">
+        <id property="id" column="id"/>
+        <result property="billPrices" column="billPrices"/>
+        <result property="isPayed" column="isPayed"/>
+        <result property="billInfo" column="billInfo"/>
+        <result property="billBook" column="billBook"/>
+    </resultMap>
+    <select id="queryByConditions" resultMap="billMap">
+        select b.id id, b.billPrices billPrices, b.isPayed isPayed, b.billInfo billInfo , b.billBook billBook, b.billUser billUser
+        from bill b left join user u on b.billUser = u.id
+        <where>
+            1 = 1
+            <foreach collection="conditions" index="key" item="value">
+                <if test="key != null">
+                    and b.${key} like CONCAT('%',#{value},'%')
+                </if>
+            </foreach>
+        </where>
+        limit #{start},#{size}
+    </select>
+
+<!--    查询书的销量-->
+    <select id="countSaledBooksById" resultType="Integer">
+        select count(*) from bill
+        where
+    </select>
+
+    <insert id="addBill" parameterType="domain.Bill">
+        insert into bill(billPrices,isPayed,billInfo,billBook,billUser)
+        values (#{billPrices},#{isPayed},#{billInfo},#{billBook},#{billUser})
+    </insert>
+</mapper>

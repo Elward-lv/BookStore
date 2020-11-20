@@ -1,0 +1,218 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:mvc="http://www.springframework.org/schema/mvc"
+       xmlns:p="http://www.springframework.org/schema/p"
+       xmlns:context="http://www.springframework.org/schema/context"
+       xmlns:tx="http://www.springframework.org/schema/tx"
+       xmlns:aop="http://www.springframework.org/schema/aop"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans
+        http://www.springframework.org/schema/beans/spring-beans.xsd
+        http://www.springframework.org/schema/context
+        http://www.springframework.org/schema/context/spring-context.xsd
+        http://www.springframework.org/schema/mvc
+        http://www.springframework.org/schema/mvc/spring-mvc.xsd http://www.springframework.org/schema/tx http://www.springframework.org/schema/tx/spring-tx.xsd http://www.springframework.org/schema/aop https://www.springframework.org/schema/aop/spring-aop.xsd">
+
+    <!--    支持注解,并且设置编码-->
+    <mvc:annotation-driven>
+        <mvc:message-converters register-defaults="true">
+            <bean class="org.springframework.http.converter.StringHttpMessageConverter">
+                <property name="supportedMediaTypes">
+                    <list>
+                        <value>application/json;charset=UTF-8</value>
+                    </list>
+                </property>
+            </bean>
+        </mvc:message-converters>
+    </mvc:annotation-driven>
+    <mvc:cors>
+        <mvc:mapping path="/**"
+                     allowed-origins="*"
+                     allowed-methods="POST, GET, OPTIONS, DELETE, PUT"
+                     allowed-headers="*"
+                     allow-credentials="true"/>
+    </mvc:cors>
+
+    <!--    Content-Type, Access-Control-Allow-Headers, Authorization, X-Requested-With-->
+    <aop:config proxy-target-class="false"/>
+    <aop:aspectj-autoproxy proxy-target-class="true"/>
+    <!--<mvc:interceptors>
+        <mvc:interceptor>
+            <mvc:mapping path="/**"/>
+            <mvc:exclude-mapping path="/user/login.do"/>
+            <mvc:exclude-mapping path="/user/loginOut.do"/>
+            <mvc:exclude-mapping path="/user/register.do"/>
+            <mvc:exclude-mapping path="/book/listBooks.do"/>
+            <mvc:exclude-mapping path="/book/listIndexBooks.do"/>
+            <mvc:exclude-mapping path="/book/redis.do"/>
+            <bean id="adminHandlerInterceptorAdapter" class="config.filter.AdminHandlerInterceptorAdapter"
+                  init-method="initPremission"/>
+        </mvc:interceptor>
+    </mvc:interceptors>-->
+
+    <!--包扫描-->
+    <context:component-scan base-package="controller,config,exception,dao"/>
+    <!--包扫描结束-->
+    <bean id="propertyConfigurer" class="org.springframework.beans.factory.config.PropertyPlaceholderConfigurer">
+        <property name="locations">
+            <list>
+                <value>classpath:/druid.properties</value>
+                <!--<value>classpath:/log4j.properties</value>-->
+                <value>classpath:/redis.properties</value>
+            </list>
+        </property>
+    </bean>
+
+    <!--    ===============初始化清空redis的bean===============-->
+    <bean id="inintBean" class="config.InitBean" init-method="init"/>
+    <!--    ===============初始化bean结束===============-->
+
+    <!--    ===============redis start===============-->
+    <bean id="poolConfig" class="redis.clients.jedis.JedisPoolConfig">
+        <property name="maxIdle" value="${maxIdle}"/>
+        <property name="maxTotal" value="${maxTotal}"/>
+    </bean>
+    <!-- Spring-redis连接池管理工厂 -->
+    <bean id="jedisConnectionFactory" class="org.springframework.data.redis.connection.jedis.JedisConnectionFactory">
+        <!-- IP地址 -->
+        <property name="hostName" value="${host}"/>
+        <!-- 端口号 -->
+        <property name="port" value="${port}"/>
+        <property name="password" value="${authpassword}"/>
+        <!-- 超时时间 默认2000-->
+        <property name="timeout" value="${timeout}"/>
+        <!-- 连接池配置引用 -->
+        <property name="poolConfig" ref="poolConfig"/>
+        <!-- usePool：是否使用连接池 -->
+        <property name="usePool" value="true"/>
+    </bean>
+    <!-- redis template definition -->
+    <bean id="redisTemplate" class="org.springframework.data.redis.core.RedisTemplate">
+        <property name="connectionFactory" ref="jedisConnectionFactory"/>
+        <property name="keySerializer">
+            <bean class="org.springframework.data.redis.serializer.StringRedisSerializer"/>
+        </property>
+        <property name="valueSerializer">
+            <bean class="org.springframework.data.redis.serializer.JdkSerializationRedisSerializer"/>
+        </property>
+        <property name="hashKeySerializer">
+            <bean class="org.springframework.data.redis.serializer.StringRedisSerializer"/>
+        </property>
+        <property name="hashValueSerializer">
+            <bean class="org.springframework.data.redis.serializer.JdkSerializationRedisSerializer"/>
+        </property>
+        <!--开启事务  -->
+        <property name="enableTransactionSupport" value="true"/>
+    </bean>
+
+    <!--   =============== redis end===============-->
+
+    <!--    ===============datasource start===============-->
+    <bean id="druidDataSource" class="com.alibaba.druid.pool.DruidDataSource">
+        <property name="driverClassName" value="${driverClassName}"/>
+        <property name="url" value="${url}"/>
+        <property name="username" value="${username}"/>
+        <property name="password" value="${password}"/>
+        <property name="initialSize" value="${initialSize}"/>
+        <property name="maxActive" value="${maxActive}"/>
+        <property name="maxWait" value="${maxWait}"/>
+    </bean>
+
+    <bean id="sqlSessionFactoryBean" class="org.mybatis.spring.SqlSessionFactoryBean">
+        <property name="dataSource" ref="druidDataSource"/>
+        <property name="configLocation" value="classpath:mybatis-config.xml"/>
+        <property name="mapperLocations">
+            <list>
+                <value>classpath:dao/mapper/*.xml</value>
+            </list>
+        </property>
+    </bean>
+
+    <bean id="transactionManager" class="org.springframework.jdbc.datasource.DataSourceTransactionManager">
+        <property name="dataSource" ref="druidDataSource"/>
+    </bean>
+
+    <!-- 使用注解定义事务 -->
+    <tx:annotation-driven proxy-target-class="true" transaction-manager="transactionManager"/>
+    <!--  ===============datasource end===============-->
+
+    <!--    ===============MapperFactoryBean的使用方法，简化mybatis还需要编写mapper的实现类的dao层===============-->
+    <bean id="userMapper" class="org.mybatis.spring.mapper.MapperFactoryBean">
+        <property name="sqlSessionFactory" ref="sqlSessionFactoryBean"/>
+        <!--  只能映射接口类型      -->
+        <property name="mapperInterface" value="dao.UserMapper"/>
+    </bean>
+    <bean id="bookMapper" class="org.mybatis.spring.mapper.MapperFactoryBean">
+        <property name="sqlSessionFactory" ref="sqlSessionFactoryBean"/>
+        <property name="mapperInterface" value="dao.BookMapper"/>
+    </bean>
+    <bean id="billMapper" class="org.mybatis.spring.mapper.MapperFactoryBean">
+        <property name="sqlSessionFactory" ref="sqlSessionFactoryBean"/>
+        <property name="mapperInterface" value="dao.BillMapper"/>
+    </bean>
+    <bean id="commentMapper" class="org.mybatis.spring.mapper.MapperFactoryBean">
+        <property name="sqlSessionFactory" ref="sqlSessionFactoryBean"/>
+        <property name="mapperInterface" value="dao.CommentMapper"/>
+    </bean>
+    <!--    ===============Mapper end===============-->
+
+    <!-- ===============组装服务组件,使用注解方式===============-->
+    <bean id="userService" class="service.UserServiceImpl"/>
+    <bean id="bookService" class="service.BookServiceImpl"/>
+    <bean id="billService" class="service.BillServiceImpl"/>
+    <bean id="commentService" class="service.CommentServiceImpl"/>
+    <bean id="shiroService" class="service.ShiroServiceImpl"/>
+    <!--自定义redis工具类,在需要缓存的地方注入此类  -->
+    <bean id="redisService" class="service.RedisService"/>
+    <!-- ===============组装服务组件,使用注解方式 end===============-->
+
+    <!--    ===============shiro config=======================-->
+    <bean id="securityManager" class="org.apache.shiro.web.mgt.DefaultWebSecurityManager">
+        <property name="cacheManager" ref="cacheManager"/>
+        <property name="authenticator" ref="authenticator"/>
+        <property name="realms">
+            <list>
+                <ref bean="shiroRealm"/>
+            </list>
+        </property>
+        <property name="rememberMeManager.cookie.maxAge" value="1000"/>
+    </bean>
+    <bean id="cacheManager" class="org.apache.shiro.cache.ehcache.EhCacheManager">
+        <property name="cacheManagerConfigFile" value="classpath:ehcache.xml"/>
+    </bean>
+    <bean id="authenticator" class="org.apache.shiro.authc.pam.ModularRealmAuthenticator">
+        <property name="authenticationStrategy">
+            <bean class="org.apache.shiro.authc.pam.AtLeastOneSuccessfulStrategy"/>
+        </property>
+    </bean>
+    <bean id="shiroRealm" class="config.shiro.realms.ShiroRealm"/>
+    <bean id="lifecycleBeanPostProcessor" class="org.apache.shiro.spring.LifecycleBeanPostProcessor"/>
+    <bean class="org.springframework.aop.framework.autoproxy.DefaultAdvisorAutoProxyCreator"
+          depends-on="lifecycleBeanPostProcessor"/>
+    <bean class="org.apache.shiro.spring.security.interceptor.AuthorizationAttributeSourceAdvisor">
+        <property name="securityManager" ref="securityManager"/>
+    </bean>
+    <bean id="secureRemoteInvocationExecutor" class="org.apache.shiro.spring.remoting.SecureRemoteInvocationExecutor">
+        <property name="securityManager" ref="securityManager"/>
+    </bean>
+
+    <bean id="shiroFilterFactoryBean" class="org.apache.shiro.spring.web.ShiroFilterFactoryBean">
+        <property name="securityManager" ref="securityManager"/>
+        <property name="loginUrl" value="/user/unauth.do"/>
+        <property name="unauthorizedUrl" value="/user/unauth.do"/>
+
+        <property name="filterChainDefinitionMap" ref="filterChainDefinitionMapBean"/>
+    </bean>
+    <bean id="filterChainDefinitionMapBean" factory-bean="filterChainDefinitionMapBuilder" factory-method="buildFilterChainDefinitionMap"/>
+    <bean id="filterChainDefinitionMapBuilder" class="config.shiro.factory.FilterChainDefinitionMapBuilder"/>
+    <!--    ===============shiro config end===============-->
+
+    <!--    ===============配置视图解析器===============-->
+    <bean class="org.springframework.web.servlet.view.InternalResourceViewResolver">
+        <property name="prefix" value="/WEB-INF/jsp/"/>
+        <property name="suffix" value=".jsp"/>
+    </bean>
+    <bean name="multipartResolver" class="org.springframework.web.multipart.commons.CommonsMultipartResolver">
+        <property name="defaultEncoding" value="UTF-8"/>
+    </bean>
+</beans>

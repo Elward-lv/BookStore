@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="dao.CommentMapper">
+    <resultMap id="comment" type="domain.Comment">
+        <id property="id" column="id"/>
+        <result property="commentInfo" column="commentInfo"/>
+        <result property="replyUser" column="replyUser"/>
+        <result property="commentUser" column="commentUser"/>
+        <result property="commentBook" column="commentBook"/>
+        <result property="stars" column="stars"/>
+        <result property="praises" column="praises"/>
+    </resultMap>
+<!--    根据书籍id查询评论,如果不是评论别人的评论，replyUser=-1
+        如果是别人的评论，replyUser！=-1
+        并且可以通过时间和stars排序-->
+    <select id="getCommentById" resultMap="comment">
+        select * from comment
+        where commentBook = #{id}
+        <if test="replyId != null and replyId > 0">
+            and replyUser  = #{replyId}
+        </if>
+        order by
+        <if test="order != null">
+            ${order} desc
+        </if>
+        limit #{start},#{size}
+    </select>
+
+    <select id="countCommentById">
+        select COUNT(*) from comment
+        where commentBook = #{id}
+    </select>
+
+<!--    添加评论，并且stars默认为5，其他都是必须字段-->
+    <insert id="addComment" parameterType="comment">
+        insert into comment(commentInfo,commentUser,commentBook,modifyDate
+            <if test="replyUser != null and replyUser!= 0">,replyUser
+            </if>
+            <if test="stars != null and stars!= 0">,stars
+            </if>
+            )
+        values (#{commentInfo},#{commentUser},#{commentBook},#{modifyDate}
+            <if test="replyUser != null and replyUser!= 0">
+                ,#{replyUser}
+            </if>
+            <if test="stars != null and stars > 0">
+                ,#{stars}
+            </if>
+            )
+    </insert>
+
+    <update id="updateCommentById" parameterType="comment">
+        update comment
+        <trim prefix="set " suffix=" where id = #{id}" suffixOverrides=",">
+            <if test="commentInfo != null">commentInfo = #{commentInfo} ,</if>
+            <if test="replyUser != null">replyUser = #{replyUser} ,</if>
+        </trim>
+    </update>
+
+    <delete id="deleteCommentById" parameterType="Integer">
+        delete from comment where id = #{id}
+    </delete>
+</mapper>
