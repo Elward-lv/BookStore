@@ -26,7 +26,7 @@ public class CommentController {
     @ResponseBody
     public String addComment(@RequestBody Map<String,Object> params, HttpServletRequest hsr) {
         if(CommonUtils.hasAllRequiredAndRemove(params,"commentInfo,commentBook,replyUser,stars")){
-            if(commentService.addComment(params,hsr.getSession())){
+            if(commentService.addComment(params)){
                 return CommonUtils.successJson(null);
             }
             return CommonUtils.errorJson(ErrorEnum.E_400,null);

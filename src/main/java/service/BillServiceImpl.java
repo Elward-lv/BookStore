@@ -8,6 +8,8 @@ import dao.UserMapper;
 import domain.Bill;
 import domain.PageQuery;
 import org.apache.log4j.Logger;
+import org.apache.shiro.SecurityUtils;
+import org.apache.shiro.session.Session;
 import org.springframework.beans.factory.annotation.Autowired;
 import service.inter.BillService;
 import utils.CommonUtils;
@@ -30,11 +32,10 @@ public class BillServiceImpl implements BillService {
     /**
      * 如果是管理员可以查询所有账单，否则其他用户只能查询自己的账单
      * @param conditions
-     * @param session
      */
-    public PageQuery<Bill> queryByConditions(Map<String, Object> conditions, HttpSession session) {
+    public PageQuery<Bill> queryByConditions(Map<String, Object> conditions) {
         CommonUtils.fillPageParams(conditions);
-        String userRoleName = (String) session.getAttribute("user");
+        String userRoleName = (String) SecurityUtils.getSubject().getPrincipal();
         Integer currentPage = (Integer) conditions.get("currentPage");
         Integer pageSize = (Integer) conditions.get("pageSize");
 
@@ -59,14 +60,13 @@ public class BillServiceImpl implements BillService {
      * 可以把价钱存入缓存之中,不过每次book改变时需要修改
      * 需要把商品和个数对应的map，转化为json字符串
      * @param params 一般包含个数和id对应map，以及billInfo账单留言
-     * @param session
      * @return
      */
-    public boolean addBill(Map<String, Object> params, HttpSession session) {
+    public boolean addBill(Map<String, Object> params) {
         boolean res = false;
         //开始执行更新
         String billInfo = (String) params.remove("billInfo");
-        String userName = (String) session.getAttribute("user");
+        String userName = (String) SecurityUtils.getSubject().getPrincipal();
         try {
             if (!convertIntToJsonAndCheckEnough(params)) {
                 return res;//数量校验不通过,说明书籍容量不够

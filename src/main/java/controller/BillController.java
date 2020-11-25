@@ -1,6 +1,9 @@
 package controller;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import org.apache.shiro.SecurityUtils;
+import org.apache.shiro.session.Session;
+import org.apache.shiro.subject.Subject;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
@@ -31,29 +34,29 @@ public class BillController {
 
     /**
      * 查询账单信息,登陆之后可以访问,支持条件查询
-     *
+     *  支持分页
      * @param params
      * @return
      */
-    @RequestMapping("/listBills.do")
+    @RequestMapping(value = "/listBills.do",method = RequestMethod.POST)
     @ResponseBody
     public String listBills(@RequestBody Map<String, Object> params, HttpServletRequest httpServletRequest) throws JsonProcessingException {
         CommonUtils.hasAllRequiredAndRemove(params, "isPayed,billInfo,billBook,currentPage,pageSize");
-        billService.queryByConditions(params, httpServletRequest.getSession());
+        billService.queryByConditions(params);
         return CommonUtils.successJson(null);
     }
 
     /**
-     * 已经确定的账单,提交了的账单，只差支付,不需要参数校验，因为参数是未知的
+     * 已经确定的账单,提交了的账单，只差支付(现在还未实现支付)
+     * 不需要参数校验，因为参数是未知的
      * service里面会校验数量的合法性
-     * @param params             map类型：图书id -> 图书购买数量
-     * @param httpServletRequest 获取登陆信息
+     * @param params  map类型：图书id -> 图书购买数量
      * @return json
      */
-    @RequestMapping("/addBill.do")
+    @RequestMapping(value = "/addBill.do",method = RequestMethod.POST)
     @ResponseBody
-    public String addBill(@RequestBody Map<String, Object> params, HttpServletRequest httpServletRequest) throws JsonProcessingException {
-        if(billService.addBill(params,httpServletRequest.getSession())){
+    public String addBill(@RequestBody Map<String, Object> params) {
+        if(billService.addBill(params)){
             return CommonUtils.successJson(null);
         }
         return CommonUtils.errorJson(ErrorEnum.E_90003, null);
@@ -62,15 +65,16 @@ public class BillController {
     /**
      * 根据map<id,nums></>加入购物车，但是未确定是账单，存入redis中
      * 把用户名作为键值，hash表保存用户的购物车
+     * @param params map<id,nums>
      * @return
      */
     @RequestMapping("/addBookToCart.do")
     @ResponseBody
-    public String addBookToCart(@RequestParam Map<String,Object> params, HttpServletRequest httpServletRequest) throws JsonProcessingException {
-        HttpSession session = httpServletRequest.getSession();
-        checkCart(session);
+    public String addBookToCart(@RequestParam Map<String,Object> params) {
+        Subject subject = SecurityUtils.getSubject();
+        checkCart(subject.getSession());
         //bookService.
-        String userName = (String) session.getAttribute("user");
+        String userName = (String) subject.getPrincipal();
         if(userName != null){
             redisService.increNumsByMap(userName,params);
             return CommonUtils.successJson(null);
@@ -84,13 +88,14 @@ public class BillController {
      */
     @RequestMapping("/buyAndCearCart.do")
     @ResponseBody
-    public String buyAndCearCart(HttpServletRequest hsr) throws JsonProcessingException {
-        checkCart(hsr.getSession());
-        String userName = (String) hsr.getSession().getAttribute("user");
+    public String buyAndCearCart() {
+        Subject subject = SecurityUtils.getSubject();
+        checkCart(subject.getSession());
+        String userName = (String) subject.getPrincipal();
         if(userName != null){
             Map<String, Object> cart = Collections.synchronizedMap(new HashMap<>());
             CommonUtils.convertMap(redisService.hmget(userName),cart);
-            if (billService.addBill(cart,hsr.getSession())) {
+            if (billService.addBill(cart)) {
                 CommonUtils.successJson(null);
             }
         }
@@ -98,15 +103,14 @@ public class BillController {
     }
 
     /**
-     * 清理购物车的某一项或者全部
-     * @param ids
+     * 清理购物车的某一项或者全部,不会购买变成订单
+     * @param ids  需要清除的一个或多个书的id
      * @return
-     * @throws JsonProcessingException
      */
     @RequestMapping("/clearCart.do")
     @ResponseBody
-    public String clearCart(@RequestParam("id")List<String> ids,HttpServletRequest hsr) throws JsonProcessingException {
-        String userName = (String) hsr.getSession().getAttribute("user");
+    public String clearCart(@RequestParam("id")List<String> ids) {
+        String userName = (String) SecurityUtils.getSubject().getPrincipal();
         if(userName != null){
             for (String id : ids) {
                 redisService.hdel(id);
@@ -117,17 +121,17 @@ public class BillController {
     }
 
     /**
-     * 直接购买图书，不需要经历购物车;需要添加bill账单，减少book数目，并且刷新redis
+     * 直接购买图书，不需要经历购物车;
+     * 需要添加bill账单，减少book数目，并且刷新redis
      * @param id 一次购买一本书的id
      * @return
-     * @throws JsonProcessingException
      */
     @RequestMapping("/payBill.do")
     @ResponseBody
-    public String payBill(@RequestParam (value = "id",required = true) Integer id, HttpServletRequest req) throws JsonProcessingException {
+    public String payBill(@RequestParam (value = "id",required = true) Integer id) {
         Map<String, Object> map = Collections.synchronizedMap(new HashMap<String, Object>());
         map.put(id.toString(),1);
-        if(billService.addBill(map,req.getSession())){
+        if(billService.addBill(map)){
             return CommonUtils.successJson(null);
         }
         return CommonUtils.errorJson(ErrorEnum.E_400,null);
@@ -138,14 +142,14 @@ public class BillController {
      * @param session
      * @return
      */
-    public void checkCart(HttpSession session){
-        Map<Object,Object> cart = redisService.hmget(session.getId());
+    public void checkCart(Session session){
+        Map<Object,Object> cart = redisService.hmget((String) session.getId());
         if( cart != null){
             for (Object key : cart.keySet()) {
                 Integer bookNum = Integer.parseInt(redisService.hget("bookNums", key.toString()).toString());
                 if(bookNum < Integer.parseInt(cart.get(key).toString())){
                     //刷新redis的书本数量
-                    redisService.hset(session.getId(),key.toString(),bookNum);
+                    redisService.hset((String) session.getId(),key.toString(),bookNum);
                 }
             }
         }

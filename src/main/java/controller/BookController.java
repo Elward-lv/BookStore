@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import domain.Book;
 import domain.PageQuery;
 import org.apache.log4j.Logger;
+import org.apache.shiro.SecurityUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
@@ -62,10 +63,8 @@ public class BookController {
     //
     @RequestMapping(value = "/listIndexBooks.do",method = RequestMethod.POST)
     @ResponseBody
-    public String listIndexBooks(@RequestBody Map<String, Object> params,HttpServletRequest hsr) {
-        logger.info("user:"+hsr.getSession().getAttribute("roleName"));
-        logger.info("user:"+hsr.getSession().getAttribute("user"));
-
+    public String listIndexBooks(@RequestBody Map<String, Object> params) {
+        logger.info("=======>用户名:"+SecurityUtils.getSubject().getPrincipal());
         CommonUtils.hasAllRequiredAndRemove(params,"types,size");
         List<String> conditions = (List<String>) params.get("types");
         Integer size = Integer.parseInt(params.get("size").toString());
@@ -107,7 +106,7 @@ public class BookController {
         if (res != null) {
             params.put("bookImg", PATH + "/" + res);
             if (CommonUtils.hasAllRequiredAddAndRemove(params, "bookCode,bookName,bookInfo,bookAuthor,bookNums,bookImg,bookPrice")) {
-                bookServiceImpl.addBook(params, httpServletRequest.getSession());
+                bookServiceImpl.addBook(params);
                 return CommonUtils.successJson(null);
             }
         }
@@ -130,7 +129,7 @@ public class BookController {
             params.put("bookImg",res);
         }
         CommonUtils.hasAllRequiredAndRemove(params, "id,bookCode,bookName,bookInfo,bookAuthor,bookNums,bookImg,bookPrice");
-        if (params.get("id") != null && bookServiceImpl.updateBook(params, httpServletRequest.getSession()) >= 0) {
+        if (params.get("id") != null && bookServiceImpl.updateBook(params) >= 0) {
             return CommonUtils.successJson(null);
         }
 
@@ -141,7 +140,7 @@ public class BookController {
     @ResponseBody
     public String deleteBook(@RequestParam("id") Integer id, HttpServletRequest httpServletRequest) throws JsonProcessingException {
         System.out.println("删除id:" + id);
-        bookServiceImpl.deleteBook(id, httpServletRequest.getSession());
+        bookServiceImpl.deleteBook(id);
         return CommonUtils.successJson(null);
     }
 
@@ -150,7 +149,7 @@ public class BookController {
      */
     @RequestMapping(value = "/test.do", method = RequestMethod.POST)
     @ResponseBody
-    public String getFileAndParam(@RequestPart("file") MultipartFile file, @RequestParam Map<String, Object> params, HttpServletRequest hsr) throws JsonProcessingException {
+    public String getFileAndParam(@RequestPart("file") MultipartFile file, HttpServletRequest hsr) throws JsonProcessingException {
         System.out.println("参数名:" + file.getName());
         System.out.println("文件名:" + file.getOriginalFilename());
         String filename = file.getOriginalFilename();
@@ -179,12 +178,17 @@ public class BookController {
      * @param key
      * @param field
      * @return
-     * @throws JsonProcessingException
      */
     @RequestMapping(value = "/redis.do")
     @ResponseBody
-    public String testRedis(@RequestParam("key") String key, @RequestParam("field") String field) throws JsonProcessingException {
+    public String testRedis(@RequestParam("key") String key, @RequestParam("field") String field) {
         Object value = redisService.hget(key, field);
         return CommonUtils.successJson(value);
+    }
+
+    @RequestMapping("/getPrincipal.do")
+    @ResponseBody
+    public String testShiroSession(){
+        return CommonUtils.successJson(SecurityUtils.getSubject().getPrincipal());//userName
     }
 }

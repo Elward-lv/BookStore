@@ -3,6 +3,7 @@ package service.inter;
 import domain.PageQuery;
 import domain.Permission;
 import domain.User;
+import org.apache.shiro.session.Session;
 
 import javax.servlet.http.HttpSession;
 import java.util.List;
@@ -13,11 +14,11 @@ public interface UserService {
 
     public void loginOut(HttpSession session);
 
-    public boolean register(HttpSession session, Map<String,Object> params);
+    public boolean register(Map<String,Object> params);
 
     public PageQuery<User> queryUserByCondition(Map<String,Object> conditions);
 
-    public void deleteUser(HttpSession session, Integer id);
+    public void deleteUser(Session session, Integer id);
 
     public void updateUser(Map<String, Object> params);
 

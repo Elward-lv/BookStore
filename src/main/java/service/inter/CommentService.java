@@ -12,7 +12,7 @@ import java.util.Map;
 
 public interface CommentService {
 
-    public boolean addComment(Map<String, Object> params, HttpSession session);
+    public boolean addComment(Map<String, Object> params);
 
     public PageQuery<Comment> getCommentByConditions(Map<String,Object> params);
 

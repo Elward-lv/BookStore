@@ -29,7 +29,7 @@ public class CommonExceptionHadler {
         return CommonUtils.errorJson(ErrorEnum.E_400,e.getMessage());
     }
 
-    @ExceptionHandler(AuthenticationException.class)
+    @ExceptionHandler(RuntimeException.class)
     @ResponseBody
     @ResponseStatus(HttpStatus.FORBIDDEN)
     public String AccessOutOfPower(Exception e) {

@@ -36,24 +36,20 @@ public class UserController {
     ShiroService shiroService;
 
     @RequestMapping(value = "/login.do",method = RequestMethod.POST)
-    @ResponseBody//返回json字符串
-    public String login(HttpServletRequest httpServletRequest, @RequestBody Map<String, Object> params) throws JsonProcessingException {
-        HttpSession session = httpServletRequest.getSession();
+    @ResponseBody
+    public String login(@RequestBody Map<String, Object> params) {
         if(CommonUtils.hasAllRequiredAddAndRemove(params,"userName,password")){
             //登陆代码
             String role = shiroService.login(params.get("userName").toString(),params.get("password").toString());
             return CommonUtils.successJson(role);
-            /*if(userService.login(session,params)){
-                return CommonUtils.successJson(session.getAttribute("roleName"));
-            }*/
         }
         return CommonUtils.errorJson(ErrorEnum.E_90003,"登陆失败");
     }
 
     @RequestMapping(value = "/unauth.do")
-    @ResponseBody//返回json字符串
+    @ResponseBody
     public String unauth() {
-        throw new RuntimeException("请登录！");
+        throw new RuntimeException("权限不够/未登陆，请联系管理员");
     }
 
     /**
@@ -71,11 +67,11 @@ public class UserController {
     @RequestMapping(value = "/register.do",method = RequestMethod.POST)
     @ResponseBody//返回json字符串
     public String register(HttpServletRequest httpServletRequest, @RequestBody Map<String,Object> params) {
-        HttpSession session = httpServletRequest.getSession();
+        Session session = SecurityUtils.getSubject().getSession();
         logger.info("user:"+session.getAttribute("user"));
         if (CommonUtils.hasAllRequiredAddAndRemove(params, "userName,password,gender,email,birthday,address")) {
             //注册代码
-            if(userService.register(session,params)){
+            if(userService.register(params)){
                 return CommonUtils.successJson("注册成功!");
             }
             return CommonUtils.errorJson(ErrorEnum.E_400,null);
@@ -85,9 +81,12 @@ public class UserController {
 
     @RequestMapping(value = "/logout.do",method = RequestMethod.POST)
     @ResponseBody//返回json字符串
-    public String loginOut(HttpServletRequest httpServletRequest) {
-        HttpSession session = httpServletRequest.getSession();
-        redisService.del((String) session.getAttribute("user"));
+    public String loginOut() {
+        Session session = SecurityUtils.getSubject().getSession();
+        if(redisService.hasKey((String) session.getId())){
+            //清除购物车
+            redisService.del((String) session.getId());
+        }
         shiroService.logout();
         return CommonUtils.successJson("登出成功");
     }
@@ -99,7 +98,8 @@ public class UserController {
     @RequestMapping("/delete.do")
     @ResponseBody
     public String deleteUser(@RequestParam("id") Integer id) {
-        HttpSession session = (HttpSession) SecurityUtils.getSubject().getSession();
+        Session session =  SecurityUtils.getSubject().getSession();
+        logger.info("controller session:"+session);
         //验证权限之后可以删除
         userService.deleteUser(session,id);
         return CommonUtils.successJson("删除成功!");

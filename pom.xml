@@ -20,14 +20,6 @@
   </properties>
 
   <dependencies>
-    <!-- https://mvnrepository.com/artifact/org.apache.shiro/shiro-all -->
-    <dependency>
-      <groupId>org.apache.shiro</groupId>
-      <artifactId>shiro-all</artifactId>
-      <version>1.7.0</version>
-      <type>pom</type>
-    </dependency>
-
 
     <!-- https://mvnrepository.com/artifact/org.mybatis/mybatis-spring -->
     <dependency>
@@ -92,6 +84,14 @@
       <version>5.2.0.RELEASE</version>
     </dependency>
 
+
+    <!-- https://mvnrepository.com/artifact/org.springframework/spring-expression -->
+    <dependency>
+      <groupId>org.springframework</groupId>
+      <artifactId>spring-expression</artifactId>
+      <version>5.2.0.RELEASE</version>
+    </dependency>
+
 <!--    shiro config-->
     <!-- https://mvnrepository.com/artifact/org.apache.shiro/shiro-all -->
     <dependency>
@@ -130,15 +130,6 @@
       <artifactId>aspectjweaver</artifactId>
       <version>1.9.2</version>
       <!--        <scope>runtime</scope>-->
-    </dependency>
-
-
-
-    <!-- https://mvnrepository.com/artifact/org.springframework/spring-expression -->
-    <dependency>
-      <groupId>org.springframework</groupId>
-      <artifactId>spring-expression</artifactId>
-      <version>5.2.0.RELEASE</version>
     </dependency>
 
     <dependency>

@@ -5,6 +5,7 @@ import dao.UserMapper;
 import domain.Comment;
 import domain.PageQuery;
 import org.apache.commons.beanutils.BeanUtils;
+import org.apache.shiro.SecurityUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import service.inter.CommentService;
 import utils.CommonUtils;
@@ -24,11 +25,10 @@ public class CommentServiceImpl implements CommentService {
     /**
      * 处理添加评论的信息
      * @param params
-     * @param session
      * @return
      */
-    public boolean addComment(Map<String, Object> params, HttpSession session) {
-        String userName = (String) session.getAttribute("user");
+    public boolean addComment(Map<String, Object> params) {
+        String userName = (String) SecurityUtils.getSubject().getPrincipal();
         Integer u_id = userMapper.getUserIdByName(userName);
         params.put("commentUser",u_id);
         Comment comment = new Comment();

@@ -7,6 +7,8 @@ import domain.User;
 import org.apache.commons.beanutils.BeanUtils;
 import org.apache.commons.beanutils.ConvertUtils;
 import org.apache.commons.beanutils.converters.DateConverter;
+import org.apache.shiro.SecurityUtils;
+import org.apache.shiro.session.Session;
 import org.springframework.beans.factory.annotation.Autowired;
 import service.inter.ShiroService;
 import service.inter.UserService;
@@ -39,6 +41,9 @@ public class UserServiceImpl implements UserService {
      */
     @Deprecated
     public boolean login(HttpSession session, Map<String,Object> conditions){
+        if(SecurityUtils.getSubject().isAuthenticated()){
+            return true;
+        }
         Integer count = userMapper.countUserByEquals(conditions);
         if(count > 0){
             String userName = (String) conditions.get("userName");
@@ -57,10 +62,9 @@ public class UserServiceImpl implements UserService {
 
     /**
      * 注册账户,防止重复注册
-     * @param session
      * @param params
      */
-    public boolean register(HttpSession session, Map<String,Object> params){
+    public boolean register(Map<String, Object> params){
         Map<String,Object> conditions = new HashMap<>();
         Object userName = params.get("userName");
         Object password = params.get("password");
@@ -79,8 +83,6 @@ public class UserServiceImpl implements UserService {
                 user.setCreateDate(new Date());
                 user.setUserRole(3);
                 if(userMapper.addUser(user)>0){
-                    //session.setAttribute("user",user.getUserName());
-                    //session.setAttribute("roleName",userMapper.getRoleName(user.getUserName()));
                     shiroService.login(userName.toString(),password.toString());
                     return true;
                 }
@@ -114,7 +116,7 @@ public class UserServiceImpl implements UserService {
         pageQuery.setTotalPage(totalCount%pageSize==0 ?totalCount/pageSize:(totalCount/pageSize+1));
         return pageQuery;
     }
-    public void deleteUser(HttpSession session, Integer id) {
+    public void deleteUser(Session session, Integer id) {
         String roleName = (String) session.getAttribute("roleName");
         userMapper.deleteUser(id);
     }

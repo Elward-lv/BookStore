@@ -13,13 +13,13 @@ public interface BookService {
 
     public PageQuery<Book> queryBookByCondition(Map<String, Object> conditions);
 
-    public void addBook(Map<String, Object> params, HttpSession session);
+    public void addBook(Map<String, Object> params);
 
-    public int updateBook(Map<String, Object> params, HttpSession session);
+    public int updateBook(Map<String, Object> params);
 
     public String saveBookImg(MultipartFile bookImg, HttpServletRequest httpServletRequest);
 
-    public void deleteBook(Integer id, HttpSession session);
+    public void deleteBook(Integer id);
 
     public List<Book> getBookPricesAndNums();
 
