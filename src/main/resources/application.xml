@@ -51,7 +51,7 @@
     </mvc:interceptors>-->
 
     <!--包扫描-->
-    <context:component-scan base-package="controller,config,exception,dao"/>
+    <context:component-scan base-package="controller,config.filter,config,exception,dao"/>
     <!--包扫描结束-->
     <bean id="propertyConfigurer" class="org.springframework.beans.factory.config.PropertyPlaceholderConfigurer">
         <property name="locations">
@@ -202,9 +202,17 @@
         <property name="unauthorizedUrl" value="/user/unauth.do"/>
 
         <property name="filterChainDefinitionMap" ref="filterChainDefinitionMapBean"/>
+        <property name="filters">
+            <map>
+                <entry key="crosFilter">
+                    <bean class="config.filter.CrosFilter"/>
+                </entry>
+            </map>
+        </property>
     </bean>
     <bean id="filterChainDefinitionMapBean" factory-bean="filterChainDefinitionMapBuilder" factory-method="buildFilterChainDefinitionMap"/>
     <bean id="filterChainDefinitionMapBuilder" class="config.shiro.factory.FilterChainDefinitionMapBuilder"/>
+
     <!--    ===============shiro config end===============-->
 
     <!--    ===============配置视图解析器===============-->
