@@ -9,6 +9,7 @@ import org.apache.log4j.Logger;
 import org.apache.shiro.SecurityUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.servlet.view.InternalResourceViewResolver;
 import service.inter.BookService;
 import utils.CommonUtils;
 
@@ -45,7 +46,7 @@ public class BookServiceImpl implements BookService {
 
         CommonUtils.hasAllRequiredAndRemove(conditions, "bookCode,bookName,bookInfo,bookAuthor,bookUser");
 
-        List<Book> books = bookMapper.queryBookByCondition(conditions, (currentPage - 1) * pageSize, pageSize);
+        List<Book> books = bookMapper.queryBookByCondition(conditions, (currentPage - 1) * pageSize, pageSize,-1);
         for (Book book : books) {
             System.out.println(book);
         }
@@ -201,6 +202,34 @@ public class BookServiceImpl implements BookService {
     }
 
     /**
+     * 查询商户本身的所有书籍
+     * @param conditions
+     * @return
+     */
+    public PageQuery<Book> queryBooksForSupply(Map<String,Object> conditions){
+        CommonUtils.fillPageParams(conditions);
+        String name = (String) SecurityUtils.getSubject().getPrincipal();
+        Integer uId = userMapper.getUserIdByName(name);
+
+        //检测参数合不合法
+        Integer currentPage = (Integer) conditions.get("currentPage");
+        Integer pageSize = (Integer) conditions.get("pageSize");
+        Integer start = ( currentPage -1) *pageSize;
+        CommonUtils.hasAllRequiredAndRemove(conditions,"bookCode,bookName,bookInfo,bookAuthor");
+
+        //获取结果集
+        List<Book> books = bookMapper.queryBookByCondition(conditions, start, pageSize , uId);
+        int totalCount = books.size();
+        logger.info("查询书籍长度:"+totalCount);
+        PageQuery<Book> pageQuery = new PageQuery<>(books);
+        pageQuery.setTotalCount(totalCount);
+        pageQuery.setPageSize(pageSize);
+        pageQuery.setCurrentPage(currentPage);
+        pageQuery.setTotalPage(totalCount % pageSize == 0 ? totalCount / pageSize : (totalCount / pageSize + 1));
+        return pageQuery;
+    }
+
+    /**
      * 查询一本书对应的所有分类
      *
      * @param id
@@ -219,7 +248,7 @@ public class BookServiceImpl implements BookService {
     public Book getBookById(Integer id) {
         Map<String, Object> conditions = new WeakHashMap<>();
         conditions.put("id", id);
-        List<Book> books = bookMapper.queryBookByCondition(conditions, 0, 1);
+        List<Book> books = bookMapper.queryBookByCondition(conditions, 0, 1,-1);
         return books.get(0);
     }
 

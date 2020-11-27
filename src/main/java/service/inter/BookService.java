@@ -13,6 +13,8 @@ public interface BookService {
 
     public PageQuery<Book> queryBookByCondition(Map<String, Object> conditions);
 
+    public PageQuery<Book> queryBooksForSupply(Map<String,Object> conditions);
+
     public void addBook(Map<String, Object> params);
 
     public int updateBook(Map<String, Object> params);

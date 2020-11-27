@@ -3,6 +3,8 @@ package controller;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import domain.PageQuery;
 import domain.User;
+import exception.AccessException;
+import org.apache.commons.beanutils.BeanUtils;
 import org.apache.log4j.Logger;
 import org.apache.shiro.SecurityUtils;
 import org.apache.shiro.session.Session;
@@ -17,6 +19,7 @@ import utils.enums.ErrorEnum;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpSession;
+import java.util.Date;
 import java.util.Map;
 
 /**
@@ -66,7 +69,7 @@ public class UserController {
 
     @RequestMapping(value = "/register.do",method = RequestMethod.POST)
     @ResponseBody//返回json字符串
-    public String register(HttpServletRequest httpServletRequest, @RequestBody Map<String,Object> params) {
+    public String register(@RequestBody Map<String, Object> params) {
         Session session = SecurityUtils.getSubject().getSession();
         logger.info("user:"+session.getAttribute("user"));
         if (CommonUtils.hasAllRequiredAddAndRemove(params, "userName,password,gender,email,birthday,address")) {
@@ -92,7 +95,8 @@ public class UserController {
     }
 
     /**
-     * 根据id删除用户
+     * 根据id删除用户,必须是管理员
+     * 或者本身注销
      * @param id
      */
     @RequestMapping("/delete.do")
@@ -101,21 +105,56 @@ public class UserController {
         Session session =  SecurityUtils.getSubject().getSession();
         logger.info("controller session:"+session);
         //验证权限之后可以删除
-        userService.deleteUser(session,id);
+        userService.deleteUser(id);
         return CommonUtils.successJson("删除成功!");
     }
 
     /**
-     * 更新用户信息
+     * 更新用户信息,支持修改部分信息，其他只要置空即可
      * @param params
      */
     @RequestMapping("/update.do")
+    @ResponseBody
     public String updateUser(@RequestBody Map<String, Object> params) {
-        if (CommonUtils.hasAllRequiredAddAndRemove(params,"id,userName,password,gender,birthday,email,userRole,address")) {
+        if(params.get("id") == null){
+            return CommonUtils.errorJson(ErrorEnum.E_90003,null);
+        }
+
+        if (CommonUtils.hasAllRequiredAndRemove(params,"id,userName,password,gender,birthday,email,userRole,address")) {
+            //对管理员和其他用户进行分类
+            if (!SecurityUtils.getSubject().hasRole("管理员")) {
+                params.put("userRole",null);
+            }else {
+                //非管理员只能修改自己的信息
+                String name = (String) SecurityUtils.getSubject().getPrincipal();
+                Integer uId = userService.getUserByName(name).getId();
+                Integer id = (Integer) params.get("id");
+                if(!uId.equals(id)){
+                    throw new AccessException("权限不够");
+                }
+            }
             userService.updateUser(params);
             return CommonUtils.successJson("更新成功");
         }
         return CommonUtils.errorJson(ErrorEnum.E_400,"更新失败");
+    }
+
+    @RequestMapping("/add.do")
+    @ResponseBody
+    public String add(@RequestBody Map<String,Object> params){
+        if (!CommonUtils.hasAllRequiredAddAndRemove(params,"userName,password,gender,email,birthday,address")) {
+            return CommonUtils.errorJson(ErrorEnum.E_90003,null);
+        }
+        params.put("createDate",new Date());
+        params.put("userRole",3);
+        User user = new User();
+       try {
+           BeanUtils.populate(user,params);
+           userService.add(user);
+       } catch (Exception e) {
+           throw new RuntimeException(e);
+       }
+        return CommonUtils.successJson(null);
     }
 
 }

@@ -22,9 +22,14 @@ public class CommentController {
     @Autowired
     CommentService commentService;
 
+    /**
+     * 必须认证
+     * @param params
+     * @return
+     */
     @RequestMapping("/addComment.do")
     @ResponseBody
-    public String addComment(@RequestBody Map<String,Object> params, HttpServletRequest hsr) {
+    public String addComment(@RequestBody Map<String, Object> params) {
         if(CommonUtils.hasAllRequiredAndRemove(params,"commentInfo,commentBook,replyUser,stars")){
             if(commentService.addComment(params)){
                 return CommonUtils.successJson(null);
@@ -45,6 +50,11 @@ public class CommentController {
             return CommonUtils.errorJson(ErrorEnum.E_90004,null);
     }
 
+    /**
+     * 必须管理员
+     * @param id
+     * @return
+     */
     @RequestMapping("/deleteComment.do")
     @ResponseBody
     public String deleteComment(Integer id){

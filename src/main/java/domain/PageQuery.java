@@ -8,6 +8,13 @@ import java.util.List;
  * @param <T>
  */
 public class PageQuery<T> {
+    public PageQuery() {
+    }
+
+    public PageQuery(List<T> list) {
+        this.list = list;
+    }
+
     private List<T> list ;
 
     private Integer totalCount;

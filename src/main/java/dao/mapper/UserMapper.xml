@@ -37,7 +37,7 @@
     </select>
 
     <select id="queryUserByCondition" resultType="domain.User">
-        select user.id,userName,gender,birthday,email,userRole,roleName,address,user.createDate from user
+        select user.id,userName,password,gender,birthday,email,userRole,roleName,address,user.createDate from user
         left join role on user.userRole = role.id
         <where>
             <foreach collection="conditions" index="key" item="value">
@@ -80,17 +80,18 @@
         delete from user  where id = #{id}
     </delete>
 
-<!--    包含更新权限的操作,字段必须含有-->
+<!--    包含更新权限的操作,字段没有的话不会修改-->
     <update id="updateUser" parameterType="domain.User">
-        update user set
-                userName = #{userName} ,
-                password = #{password} ,
-                gender = #{gender} ,
-                birthday = #{birthday} ,
-                email = #{email} ,
-                userRole = #{userRole},
-                address = #{address}
-        where id = #{id}
+        update user
+                <trim prefix="set " suffixOverrides="," suffix=" where id = #{id}">
+                    <if test="userName != null and userName.length() != 0">userName = #{userName} ,</if>
+                    <if test="password != null and password.length() != 0">password = #{password} ,</if>
+                    <if test="gender != null">gender = #{gender} ,</if>
+                    <if test="birthday != null">birthday = #{birthday} ,</if>
+                    <if test="email != null and email.length() != 0">email = #{email} ,</if>
+                    <if test="userRole != null and userRole>0">userRole = #{userRole} ,</if>
+                    <if test="address != null and address.length() != 0">address = #{address} ,</if>
+                </trim>
     </update>
 
 <!--    查询permission 的信息-->

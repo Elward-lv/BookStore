@@ -28,6 +28,9 @@ public class ShiroServiceImpl implements ShiroService {
 
     public void  logout(){
         Subject currentUser = SecurityUtils.getSubject();
+        if(!currentUser.isAuthenticated()){
+            return;
+        }
         try {
             currentUser.logout();
         }catch (Exception e){

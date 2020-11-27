@@ -116,12 +116,17 @@ public class UserServiceImpl implements UserService {
         pageQuery.setTotalPage(totalCount%pageSize==0 ?totalCount/pageSize:(totalCount/pageSize+1));
         return pageQuery;
     }
-    public void deleteUser(Session session, Integer id) {
-        String roleName = (String) session.getAttribute("roleName");
+    public void deleteUser(Integer id) {
         userMapper.deleteUser(id);
     }
     public void updateUser(Map<String, Object> params) {
         User u = new User();
+        String gender = (String) params.get("gender");
+        if("男".equals(gender)){
+            params.put("gender",1);
+        }else {
+            params.put("gender",2);
+        }
         try {
             BeanUtils.populate(u,params);
             userMapper.updateUser(u);
@@ -138,5 +143,10 @@ public class UserServiceImpl implements UserService {
     @Override
     public User getUserByName(String userName) {
         return userName==null?null:userMapper.getUserByName(userName);
+    }
+
+    @Override
+    public void add(User user){
+        userMapper.addUser(user);
     }
 }

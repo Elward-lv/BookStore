@@ -18,11 +18,13 @@ public interface UserService {
 
     public PageQuery<User> queryUserByCondition(Map<String,Object> conditions);
 
-    public void deleteUser(Session session, Integer id);
+    public void deleteUser(Integer id);
 
     public void updateUser(Map<String, Object> params);
 
     public List<Permission> queryPermission();
 
     public User getUserByName(String userName);
+
+    public void add(User user);
 }

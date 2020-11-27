@@ -31,7 +31,7 @@ public class RedisService {
      */
     public void refreshTopList(int size) {
         this.del("topList");
-        List<Book> topList = bookServiceImpl.getTopList(6);
+        List<Book> topList = bookServiceImpl.getTopList(size);
         this.lSet("topList",topList);
     }
 

@@ -1,6 +1,6 @@
 package exception;
 
-public class AccessException extends Exception {
+public class AccessException extends RuntimeException {
     public AccessException() {
         super();
     }

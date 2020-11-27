@@ -74,6 +74,13 @@ public class BookController {
         return CommonUtils.successJson(res);
     }
 
+    @RequestMapping("/queryBooksForSupply.do")
+    @ResponseBody
+    public String queryBooksForSupply(@RequestBody Map<String, Object> conditions){
+        PageQuery<Book> pageQuery = bookServiceImpl.queryBooksForSupply(conditions);
+        return CommonUtils.successJson(pageQuery);
+    }
+
     /**
      * 获取book的详细信息,包括种类
      *
@@ -91,7 +98,7 @@ public class BookController {
     }
 
     /**
-     * 添加图书,需要验证登陆状态
+     * 添加图书,需要验证登陆状态,而且必须是商户
      *
      * @param params
      * @param file
@@ -114,7 +121,7 @@ public class BookController {
     }
 
     /**
-     * 更新图书，id字段必须
+     * 更新图书，id字段必须,必须是商户
      *
      * @param file
      * @param params
@@ -129,7 +136,8 @@ public class BookController {
             params.put("bookImg",res);
         }
         CommonUtils.hasAllRequiredAndRemove(params, "id,bookCode,bookName,bookInfo,bookAuthor,bookNums,bookImg,bookPrice");
-        if (params.get("id") != null && bookServiceImpl.updateBook(params) >= 0) {
+        Object id = params.get("id");
+        if (id != null && bookServiceImpl.updateBook(params) >= 0 ) {
             return CommonUtils.successJson(null);
         }
 
